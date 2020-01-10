@@ -24,6 +24,7 @@ from scipy.integrate import ode
 __version__ = '0.3'
 __author__ = 'Dawid Laszuk'
 
+
 class Kuramoto(object):
     """
     Implementation of Kuramoto coupling model [1] with harmonic terms
@@ -39,11 +40,11 @@ class Kuramoto(object):
         (Vol. 19). doi: doi.org/10.1007/978-3-642-69689-3
     """
 
-    _noises = { 'logistic': np.random.logistic,
-                'normal': np.random.normal,
-                'uniform': np.random.uniform,
-                'custom': None
-              }
+    _noises = {'logistic': np.random.logistic,
+               'normal': np.random.normal,
+               'uniform': np.random.uniform,
+               'custom': None
+               }
 
     noise_types = _noises.keys()
 
@@ -64,7 +65,6 @@ class Kuramoto(object):
         self.m_order = self.K.shape[0]
 
         self.noise = noise
-
 
     @property
     def noise(self):
@@ -99,13 +99,13 @@ class Kuramoto(object):
             self._noise = lambda: np.array([noise_function(**p) for p in self.noise_params])
 
     def update_noise_params(self, dt):
-        self.scale_func = lambda dt: dt/np.abs(self.W**2)
+        self.scale_func = lambda dt: dt / np.abs(self.W ** 2)
         scale = self.scale_func(dt)
 
         if self.noise_type == 'uniform':
-            self.noise_params = [{'low':-s, 'high': s} for s in scale]
+            self.noise_params = [{'low': -s, 'high': s} for s in scale]
         elif self.noise_type in self.noise_types:
-            self.noise_params = [{'loc':0, 'scale': s} for s in scale]
+            self.noise_params = [{'loc': 0, 'scale': s} for s in scale]
         else:
             pass
 
@@ -114,17 +114,18 @@ class Kuramoto(object):
            Argument `arg` = (w, k), with
             w -- iterable frequency
             k -- 3D coupling matrix, unless 1st order
+            w,k are called by "kODE.set_f_params((self.W, self.K))"
             """
 
         w, k = arg
-        yt = y[:,None]
-        dy = y-yt
+        yt = y[:, None]
+        dy = y - yt
         phase = w.astype(self.dtype)
-        if self.noise != None:
+        if self.noise is not None:
             n = self.noise().astype(self.dtype)
             phase += n
         for m, _k in enumerate(k):
-            phase += np.sum(_k*np.sin((m+1)*dy),axis=1)
+            phase += np.sum(_k * np.sin((m + 1) * dy), axis=1)
 
         return phase
 
@@ -132,14 +133,14 @@ class Kuramoto(object):
         """Kuramoto's Jacobian passed for ODE solver."""
 
         w, k = arg
-        yt = y[:,None]
-        dy = y-yt
+        yt = y[:, None]
+        dy = y - yt
 
-        phase = [m*k[m-1]*np.cos(m*dy) for m in range(1,1+self.m_order)]
+        phase = [m * k[m - 1] * np.cos(m * dy) for m in range(1, 1 + self.m_order)]
         phase = np.sum(phase, axis=0)
 
         for i in range(self.n_osc):
-            phase[i,i] = -np.sum(phase[:,i])
+            phase[i, i] = -np.sum(phase[:, i])
 
         return phase
 
@@ -147,7 +148,7 @@ class Kuramoto(object):
         """Solves Kuramoto ODE for time series `t` with initial
         parameters passed when initiated object.
         """
-        dt = t[1]-t[0]
+        dt = t[1] - t[0]
         if self.dt != dt and self.noise_type != 'custom':
             self.dt = dt
             self.update_noise_params(dt)
@@ -160,17 +161,17 @@ class Kuramoto(object):
         kODE.set_f_params((self.W, self.K))
         kODE.set_jac_params((self.W, self.K))
 
-        if self._noise != None:
+        if self._noise is not None:
             self.update_noise_params(dt)
 
         phase = np.empty((self.n_osc, len(t)))
 
         # Run ODE integrator
         for idx, _t in enumerate(t[1:]):
-            phase[:,idx] = kODE.y
+            phase[:, idx] = kODE.y
             kODE.integrate(_t)
 
-        phase[:,-1] = kODE.y
+        phase[:, -1] = kODE.y
 
         return phase
 
@@ -184,32 +185,31 @@ if __name__ == "__main__":
     t0, t1, dt = 0, 40, 0.05
     T = np.arange(t0, t1, dt)
 
-
     # Y0, W, K are initial phase, intrisic freq and
     # coupling K matrix respectively
-    _Y0 = np.array([0, np.pi,0,1, 5, 2, 3])
-    _W = np.array([28,19,11,9, 2, 4])
-    _K = np.array([[ 2.3844,  1.2934,  0.6834,  2.0099,  1.9885],
-                   [ -2.3854,  3.6510,  2.0467,  3.6252,  3.2463],
-                   [ 10.1939,  4.4156,  1.1423,  0.2509,  4.1527],
-                   [ 3.8386,  2.8487,  3.4895,  0.0683,  0.8246],
-                   [ 3.9127,  1.2861,  2.9401,  0.1530,  0.6573]])
-    _K2 = np.array([[ 0.2628,  0.0043,  0.9399,  0.5107,  0.9857],
-                   [ 0.8667,  0.8154,  0.4592,  0.9781,  0.0763],
-                   [ 0.3723,  0.3856,  0.8374,  0.8812,  0.9419],
-                   [ 0.1869,  0.2678,  0.9704,  0.2823,  0.3404],
-                   [ 0.1456,  0.7341,  0.1389,  0.5602,  0.3823]])
+    _Y0 = np.array([0, np.pi, 0, 1, 5, 2, 3])
+    _W = np.array([28, 19, 11, 9, 2, 4])
+    _K = np.array([[2.3844, 1.2934, 0.6834, 2.0099, 1.9885],
+                   [-2.3854, 3.6510, 2.0467, 3.6252, 3.2463],
+                   [10.1939, 4.4156, 1.1423, 0.2509, 4.1527],
+                   [3.8386, 2.8487, 3.4895, 0.0683, 0.8246],
+                   [3.9127, 1.2861, 2.9401, 0.1530, 0.6573]])
+    _K2 = np.array([[0.2628, 0.0043, 0.9399, 0.5107, 0.9857],
+                    [0.8667, 0.8154, 0.4592, 0.9781, 0.0763],
+                    [0.3723, 0.3856, 0.8374, 0.8812, 0.9419],
+                    [0.1869, 0.2678, 0.9704, 0.2823, 0.3404],
+                    [0.1456, 0.7341, 0.1389, 0.5602, 0.3823]])
 
     _K = np.dstack((_K, _K2)).T
 
     # Preparing oscillators with Kuramoto model
-    oscN = 3 # num of oscillators
+    oscN = 3  # num of oscillators
 
     Y0 = _Y0[:oscN]
     W = _W[:oscN]
-    K = _K[:,:oscN,:oscN]
+    K = _K[:, :oscN, :oscN]
 
-    init_params = {'W':W, 'K':K, 'Y0':Y0}
+    init_params = {'W': W, 'K': K, 'Y0': Y0}
 
     kuramoto = Kuramoto(init_params)
     kuramoto.noise = 'logistic'
@@ -221,9 +221,9 @@ if __name__ == "__main__":
     plt.figure()
 
     for comp in range(len(W)):
-        plt.subplot(len(W),1,comp+1)
-        plt.plot(odeT, np.diff(odePhi[comp])/dt,'r')
-        plt.ylabel('$\dot\phi_%i(t)$'%(comp+1))
+        plt.subplot(len(W), 1, comp + 1)
+        plt.plot(odeT, np.diff(odePhi[comp]) / dt, 'r')
+        plt.ylabel('$\dot\phi_%i(t)$' % (comp + 1))
 
     plt.suptitle("Instantaneous frequencies")
     plt.savefig('phases')
